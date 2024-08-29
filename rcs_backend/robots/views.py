@@ -8,6 +8,25 @@ from django.http import JsonResponse
 import zipfile
 import json
 
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+
+@api_view(['POST'])
+def update_robot(request, robot_id):
+    try:
+        robot = Robot.objects.get(robotID=robot_id)
+    except Robot.DoesNotExist:
+        return Response({'error': 'Robot not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = RobotSerializer(robot, data=request.data, partial=True)  # partial=True để cho phép cập nhật một phần
+    
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 # Create your views here.
 class RobotViewSet(viewsets.ModelViewSet):
@@ -37,8 +56,6 @@ class MapUploadAndAPI(APIView):
                 # Extract và xử lý file topo.json
                 with zip_ref.open('topo.json') as f:
                     topo_data = json.load(f)
-                    # print("$$$$$$$", topo_data)
-                
                     map_data = self.extract_fields(topo_data)
 
                     # Lưu dữ liệu vào MapCheck
