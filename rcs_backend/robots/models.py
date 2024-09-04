@@ -34,3 +34,13 @@ class MapQuery(models.Model):
 
     def __str__(self):
         return self.node_id
+
+class RobotRegister(models.Model):
+    device = models.CharField(max_length=100)
+    ip = models.GenericIPAddressField()
+    port = models.IntegerField()
+    type = models.CharField(max_length=50)
+    state = models.CharField(max_length=50, choices=[('active', 'Active'), ('inactive', 'Inactive')])
+
+    def __str__(self):
+        return f"{self.device} ({self.ip}:{self.port})"

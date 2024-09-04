@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
 from rest_framework import viewsets
 from rest_framework.views import APIView
-from .models import Robot, MapCheck, MapQuery
-from .serializers import RobotSerializer
+from .models import Robot, MapCheck, MapQuery, RobotRegister
+from .serializers import RobotSerializer, RobotRegisterSerializer
 from .forms import JSONFileForm
 from django.http import JsonResponse
 import zipfile
@@ -32,6 +32,42 @@ def update_robot(request, robot_id):
 class RobotViewSet(viewsets.ModelViewSet):
     queryset = Robot.objects.all()
     serializer_class = RobotSerializer
+    
+class RobotRegistrationView(APIView):
+    def post(self, request):
+        serializer = RobotRegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class RobotRegistrationView(APIView):
+    def post(self, request):
+        data = request.data
+        
+        device_info = data.get('Body', {}).get('Device', {})
+
+        # Chuẩn bị dữ liệu cho model Robot
+        robot_data = {
+            "device": device_info.get('SerialNo'),
+            "ip": device_info.get('Ip'),
+            "port": device_info.get('Port'),
+            "type": device_info.get('DeviceType'),
+            "state": 'inactive'  # Hoặc bất kỳ trạng thái mặc định nào
+        }
+
+        serializer = RobotRegisterSerializer(data=robot_data)
+        if serializer.is_valid():
+            serializer.save()
+            # Xử lý để cho phép đăng nhập, có thể là tạo token hoặc trả về thông tin xác thực
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class RobotRegistrationListView(APIView):
+    def get(self, request):
+        robots = RobotRegister.objects.all()
+        serializer = RobotRegisterSerializer(robots, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 class MapUploadAndAPI(APIView):
 
