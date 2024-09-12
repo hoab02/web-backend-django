@@ -5,8 +5,10 @@ from .models import Robot, MapCheck, MapQuery, RobotRegister
 from .serializers import RobotSerializer, RobotRegisterSerializer
 from .forms import JSONFileForm
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 import zipfile
 import json
+import requests
 
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -46,6 +48,14 @@ class RobotRegistrationView(APIView):
         data = request.data
         
         device_info = data.get('Body', {}).get('Device', {})
+        serial_no = device_info.get('SerialNo')
+
+        # Check if the device already exists in the database
+        if RobotRegister.objects.filter(device=serial_no).exists():
+            robot = get_object_or_404(RobotRegister, device=serial_no)
+            robot.state = 'inactive'
+            robot.save()
+            return Response({"message": "Device already registered"}, status=status.HTTP_200_OK)
 
         # Chuẩn bị dữ liệu cho model Robot
         robot_data = {
@@ -137,5 +147,32 @@ class MapUploadAndAPI(APIView):
 
         return extracted_data
 
-    
 
+@api_view(['POST'])
+def register_robot(request):
+    data = request.data
+    device_serial = data.get('Device')
+
+    print("DATA REG RECEIVE", data)
+
+    if not device_serial:
+        return Response({"error": "Device Serial Number not provided"}, status=400)
+
+    try:
+        # Call the external service to activate the robot login
+        response = requests.post('http://127.0.0.1:3003/activate_robot_login', json=data)
+        
+        if response.status_code == 200:
+            # Find the robot in the database by its serial number (device)
+            robot = get_object_or_404(RobotRegister, device=device_serial)
+            
+            # Update the robot's state to 'active'
+            robot.state = 'active'
+            robot.save()
+
+            return Response({"message": "Robot registered and activated successfully"}, status=200)
+        else:
+            return Response({"error": "Failed to register robot"}, status=response.status_code)
+
+    except requests.exceptions.RequestException as e:
+        return Response({"error": str(e)}, status=500)

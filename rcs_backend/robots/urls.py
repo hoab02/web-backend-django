@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import RobotViewSet, MapUploadAndAPI, RobotRegistrationView, RobotRegistrationListView
+from .views import RobotViewSet, MapUploadAndAPI, RobotRegistrationView, RobotRegistrationListView, register_robot
 
 # urls.py
 from .views import update_robot
@@ -15,4 +15,5 @@ urlpatterns = [
     path('update-robot/<str:robot_id>/', update_robot, name='update_robot'),
     path('api/robot-register/', RobotRegistrationView.as_view(), name='robot-register'),
     path('api/robots/', RobotRegistrationListView.as_view(), name='robot-list'),
+    path('register/', register_robot, name='register_robot'),
 ]
